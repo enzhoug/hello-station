@@ -36,11 +36,16 @@ jobs:
           printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Build release image
+        env:
+          RELEASE_ID: ${{ github.sha }}
+        run: docker build -t "hello-station:$RELEASE_ID" .
       - name: Upload and deploy this commit
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           RELEASE_ID: ${{ github.sha }}
         run: |
+          docker save "hello-station:$RELEASE_ID" | gzip | ssh "$DEPLOY_USER@$DEPLOY_HOST" "gunzip | docker load"
           git archive "$RELEASE_ID" | ssh "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p ~/hello-station/releases/$RELEASE_ID && tar -xf - -C ~/hello-station/releases/$RELEASE_ID"
           ssh "$DEPLOY_USER@$DEPLOY_HOST" "bash ~/hello-station/releases/$RELEASE_ID/deploy/deploy.sh $RELEASE_ID"

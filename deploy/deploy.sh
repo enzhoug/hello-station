@@ -7,7 +7,6 @@ new="$base/releases/$release"
 previous="$(cat "$base/current" 2>/dev/null || true)"
 cd "$new"
 export RELEASE_ID="$release"
-docker compose -p hello-station build
 rollback() {
   echo 'Deployment failed; attempting rollback' >&2
   if [[ "$previous" =~ ^[0-9a-f]{40}$ ]] && [[ -d "$base/releases/$previous" ]]; then

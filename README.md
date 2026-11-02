@@ -23,7 +23,7 @@ uvicorn app.main:app --reload
 
 ## 服务器一次性准备
 
-准备一台可公网访问的 Linux 服务器（例如 39.106.226.254），安装 Docker Engine、Compose 插件及 curl；部署账户必须能无交互执行 `docker compose`。配置防火墙和云安全组允许 TCP 8000 供用户访问，SSH 端口只向适当来源开放。确认磁盘有足够空间，服务器可以访问构建依赖。Docker 权限等同于较高的主机权限，应使用专用部署账户和专用服务器或隔离环境。
+准备一台可公网访问的 Linux 服务器（例如 39.106.226.254），安装 Docker Engine、Compose 插件及 curl；部署账户必须能无交互执行 `docker compose`。配置防火墙和云安全组允许 TCP 8000 供用户访问，SSH 端口只向适当来源开放。确认磁盘有足够空间，GitHub Actions 能通过 SSH 访问服务器。Docker 权限等同于较高的主机权限，应使用专用部署账户和专用服务器或隔离环境。
 
 创建专用 Ed25519 密钥，将公钥添加到该部署账户的 `~/.ssh/authorized_keys`。在可信渠道核对服务器 SSH 主机密钥指纹后，把完整的 known_hosts 行配置到仓库 Secrets；不要在未核对指纹的情况下信任 `ssh-keyscan` 输出。GitHub 仓库 Settings → Secrets and variables → Actions 中设置：
 
@@ -32,7 +32,7 @@ uvicorn app.main:app --reload
 - `DEPLOY_SSH_KEY`：专用私钥完整内容。
 - `DEPLOY_KNOWN_HOSTS`：经核对的服务器主机公钥行。
 
-确保默认分支为 `main`，且仓库启用了 Actions。推送到 `main` 后，Actions 先执行 Ruff、pytest 和 Docker 构建，再通过 SSH 上传该提交并在服务器构建启动。Pull Request 只运行检查。部署到 `~/hello-station/releases/<提交号>`，并通过 `/health` 验证；失败时尽力恢复上一次成功运行的版本。单机更新可能短暂中断。`workflow_dispatch` 仅运行测试；部署由推送 main 触发。
+确保默认分支为 `main`，且仓库启用了 Actions。推送到 `main` 后，Actions 先执行 Ruff、pytest 和 Docker 构建，再构建版本镜像并通过 SSH 将镜像和该提交上传至服务器启动。Pull Request 只运行检查。部署到 `~/hello-station/releases/<提交号>`，并通过 `/health` 验证；失败时尽力恢复上一次成功运行的版本。单机更新可能短暂中断。`workflow_dispatch` 仅运行测试；部署由推送 main 触发。
 
 部署后访问 `http://39.106.226.254:8000/docs`。如需 HTTPS，配置域名和反向代理、证书。检查 Actions 日志及服务器上的 `docker compose -p hello-station ps` 排障。
 
