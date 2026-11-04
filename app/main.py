@@ -1,9 +1,14 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Response
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
 from app import database, repository
+
+STATIC_DIR = Path(__file__).parent / "static"
 
 
 class TaskCreate(BaseModel):
@@ -30,10 +35,16 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="Hello Station", version="0.1.0", lifespan=lifespan)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 def home():
+    return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/info")
+def info():
     return {"service": "hello-station", "docs": "/docs", "health": "/health"}
 
 

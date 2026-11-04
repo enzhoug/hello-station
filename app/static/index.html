@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hello Station · 待办清单</title>
+<style>
+  :root {
+    --bg: #eef2f7;
+    --card: #ffffff;
+    --text: #1f2933;
+    --muted: #7b8794;
+    --line: #e4e9f0;
+    --accent: #3b6ef6;
+    --accent-dark: #2b55c9;
+    --danger: #e0473c;
+    --ok: #1f9d55;
+    --shadow: 0 12px 30px rgba(31, 41, 51, .09);
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    padding: 40px 16px 64px;
+    background:
+      radial-gradient(900px 400px at 15% -10%, #dfe8ff 0%, transparent 60%),
+      radial-gradient(700px 400px at 95% 0%, #d9f5ec 0%, transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font: 15px/1.55 -apple-system, "Segoe UI", "Microsoft YaHei", Roboto, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .app { width: 100%; max-width: 620px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .logo {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), #7aa2ff);
+    display: grid; place-items: center; color: #fff; font-weight: 700;
+    box-shadow: 0 6px 14px rgba(59, 110, 246, .35);
+  }
+  h1 { margin: 0; font-size: 18px; letter-spacing: .2px; }
+  .sub { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+
+  .status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #c3cbd6; }
+  .status.online .dot { background: var(--ok); box-shadow: 0 0 0 3px rgba(31, 157, 85, .15); }
+  .status.offline .dot { background: var(--danger); box-shadow: 0 0 0 3px rgba(224, 71, 60, .15); }
+
+  .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+
+  form { display: flex; gap: 10px; padding: 16px; border-bottom: 1px solid var(--line); }
+  input[type="text"] {
+    flex: 1; min-width: 0; padding: 11px 14px;
+    border: 1px solid var(--line); border-radius: 10px;
+    font: inherit; color: inherit; background: #fafbfd;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input[type="text"]:focus {
+    outline: none; border-color: var(--accent); background: #fff;
+    box-shadow: 0 0 0 3px rgba(59, 110, 246, .15);
+  }
+  input[type="text"]::placeholder { color: #a9b3c0; }
+
+  button { font: inherit; cursor: pointer; border: none; }
+  .btn-primary {
+    padding: 11px 20px; border-radius: 10px; color: #fff; font-weight: 600;
+    background: var(--accent); transition: background .15s, transform .1s;
+  }
+  .btn-primary:hover { background: var(--accent-dark); }
+  .btn-primary:active { transform: scale(.98); }
+  .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+
+  .tabs { display: flex; gap: 4px; padding: 12px 16px 0; }
+  .tab {
+    padding: 6px 12px; border-radius: 8px; background: transparent;
+    color: var(--muted); font-size: 13px;
+  }
+  .tab:hover { background: #f2f5fa; }
+  .tab.active { background: rgba(59, 110, 246, .1); color: var(--accent); font-weight: 600; }
+
+  ul { list-style: none; margin: 0; padding: 8px; min-height: 130px; }
+
+  li.item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px; border-radius: 10px; transition: background .15s;
+    animation: pop .18s ease-out;
+  }
+  li.item:hover { background: #f7f9fc; }
+  @keyframes pop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+  .check {
+    flex: none; width: 21px; height: 21px; border-radius: 50%;
+    border: 2px solid #cfd7e2; background: #fff;
+    display: grid; place-items: center; padding: 0;
+    transition: border-color .15s, background .15s;
+  }
+  .check:hover { border-color: var(--accent); }
+  .check svg { width: 12px; height: 12px; opacity: 0; transform: scale(.6); transition: opacity .15s, transform .15s; }
+  .check.done { background: var(--accent); border-color: var(--accent); }
+  .check.done svg { opacity: 1; transform: none; }
+
+  .title { flex: 1; min-width: 0; word-break: break-word; transition: color .15s; }
+  li.item.done .title { color: var(--muted); text-decoration: line-through; }
+
+  .del {
+    flex: none; width: 30px; height: 30px; border-radius: 8px;
+    background: transparent; color: #c0c8d4; display: grid; place-items: center;
+    opacity: 0; transition: opacity .15s, background .15s, color .15s;
+  }
+  li.item:hover .del, li.item:focus-within .del { opacity: 1; }
+  .del:hover { background: rgba(224, 71, 60, .1); color: var(--danger); }
+
+  .empty { padding: 34px 16px; text-align: center; color: var(--muted); font-size: 14px; }
+  .empty strong { display: block; color: var(--text); font-size: 15px; margin-bottom: 4px; }
+
+  .skeleton { height: 44px; margin: 8px; border-radius: 10px; background: linear-gradient(90deg, #f1f4f9 25%, #e7ecf4 37%, #f1f4f9 63%); background-size: 400% 100%; animation: shimmer 1.3s infinite; }
+  @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+
+  footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 18px; border-top: 1px solid var(--line);
+    font-size: 13px; color: var(--muted);
+  }
+  .link { color: var(--muted); text-decoration: none; }
+  .link:hover { color: var(--accent); text-decoration: underline; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 16px);
+    background: #2b3440; color: #fff; padding: 10px 16px; border-radius: 10px;
+    font-size: 13px; box-shadow: var(--shadow); opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s; max-width: calc(100vw - 32px);
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.error { background: var(--danger); }
+
+  @media (max-width: 480px) {
+    form { flex-direction: column; }
+    .btn-primary { width: 100%; }
+    .del { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<main class="app">
+  <header>
+    <div class="brand">
+      <div class="logo">H</div>
+      <div>
+        <h1>待办清单</h1>
+        <p class="sub">Hello Station · FastAPI + SQLite</p>
+      </div>
+    </div>
+    <span class="status" id="status"><span class="dot"></span><span id="status-text">连接中…</span></span>
+  </header>
+
+  <section class="card">
+    <form id="form" autocomplete="off">
+      <input id="title" type="text" maxlength="200" placeholder="添加一件待办，例如：部署上线" aria-label="待办内容">
+      <button class="btn-primary" type="submit" id="add">添加</button>
+    </form>
+
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-filter="all">全部</button>
+      <button class="tab" data-filter="active">未完成</button>
+      <button class="tab" data-filter="done">已完成</button>
+    </div>
+
+    <ul id="list"></ul>
+
+    <footer>
+      <span id="count">—</span>
+      <a class="link" href="/docs" target="_blank" rel="noopener">API 文档 ↗</a>
+    </footer>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  const API = "/api/tasks";
+  const $ = (id) => document.getElementById(id);
+  const listEl = $("list");
+  const formEl = $("form");
+  const inputEl = $("title");
+  const addEl = $("add");
+  const countEl = $("count");
+  const statusEl = $("status");
+  const statusText = $("status-text");
+  const toastEl = $("toast");
+
+  let tasks = [];
+  let filter = "all";
+  let loading = true;
+  let toastTimer = null;
+
+  function notify(message, isError) {
+    toastEl.textContent = message;
+    toastEl.className = "toast show" + (isError ? " error" : "");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toastEl.className = "toast"; }, 2800);
+  }
+
+  function setOnline(online) {
+    statusEl.className = "status " + (online ? "online" : "offline");
+    statusText.textContent = online ? "服务正常" : "连接失败";
+  }
+
+  async function request(url, options) {
+    const res = await fetch(url, Object.assign({ headers: { "Content-Type": "application/json" } }, options));
+    if (res.status === 204) return null;
+    if (!res.ok) {
+      let detail = "请求失败（" + res.status + "）";
+      try {
+        const body = await res.json();
+        if (typeof body.detail === "string") detail = body.detail;
+      } catch (_) { /* 响应不是 JSON */ }
+      throw new Error(detail);
+    }
+    return res.json();
+  }
+
+  function icon(name) {
+    const paths = {
+      check: '<path d="M2 6.5 4.8 9.3 10 3.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+      trash: '<path d="M2.5 4h9M5.5 4V2.5h3V4M4 4l.6 8.5h4.8L10 4M6.3 6.5v4M7.7 6.5v4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>'
+    };
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 14 14");
+    svg.setAttribute("aria-hidden", "true");
+    svg.innerHTML = paths[name];
+    return svg;
+  }
+
+  function visible() {
+    if (filter === "active") return tasks.filter((t) => !t.done);
+    if (filter === "done") return tasks.filter((t) => t.done);
+    return tasks;
+  }
+
+  function render() {
+    listEl.textContent = "";
+
+    if (loading) {
+      for (let i = 0; i < 3; i++) {
+        const row = document.createElement("li");
+        row.className = "skeleton";
+        listEl.appendChild(row);
+      }
+      countEl.textContent = "加载中…";
+      return;
+    }
+
+    const items = visible();
+
+    if (items.length === 0) {
+      const empty = document.createElement("li");
+      empty.className = "empty";
+      const title = document.createElement("strong");
+      const hint = document.createElement("span");
+      if (tasks.length === 0) {
+        title.textContent = "还没有待办";
+        hint.textContent = "在上面输入内容，按回车即可添加。";
+      } else {
+        title.textContent = filter === "active" ? "全部完成了 🎉" : "这里还没有内容";
+        hint.textContent = "切换上方标签查看其他待办。";
+      }
+      empty.append(title, hint);
+      listEl.appendChild(empty);
+    } else {
+      items.forEach((task) => listEl.appendChild(rowFor(task)));
+    }
+
+    const remaining = tasks.filter((t) => !t.done).length;
+    countEl.textContent = tasks.length === 0
+      ? "暂无待办"
+      : "共 " + tasks.length + " 项 · 未完成 " + remaining + " 项";
+  }
+
+  function rowFor(task) {
+    const li = document.createElement("li");
+    li.className = "item" + (task.done ? " done" : "");
+
+    const check = document.createElement("button");
+    check.className = "check" + (task.done ? " done" : "");
+    check.type = "button";
+    check.setAttribute("aria-label", task.done ? "标记为未完成" : "标记为已完成");
+    check.appendChild(icon("check"));
+    check.addEventListener("click", () => toggle(task));
+
+    const title = document.createElement("span");
+    title.className = "title";
+    title.textContent = task.title;
+
+    const del = document.createElement("button");
+    del.className = "del";
+    del.type = "button";
+    del.setAttribute("aria-label", "删除：" + task.title);
+    del.appendChild(icon("trash"));
+    del.addEventListener("click", () => remove(task));
+
+    li.append(check, title, del);
+    return li;
+  }
+
+  async function load() {
+    try {
+      tasks = await request(API);
+      loading = false;
+      setOnline(true);
+    } catch (err) {
+      tasks = [];
+      loading = false;
+      setOnline(false);
+      notify(err.message || "无法加载待办", true);
+    }
+    render();
+  }
+
+  async function toggle(task) {
+    try {
+      const updated = await request(API + "/" + task.id, {
+        method: "PATCH",
+        body: JSON.stringify({ done: !task.done })
+      });
+      tasks = tasks.map((t) => (t.id === updated.id ? updated : t));
+      setOnline(true);
+      render();
+    } catch (err) {
+      notify(err.message, true);
+      load();
+    }
+  }
+
+  async function remove(task) {
+    try {
+      await request(API + "/" + task.id, { method: "DELETE" });
+      tasks = tasks.filter((t) => t.id !== task.id);
+      setOnline(true);
+      render();
+      notify("已删除");
+    } catch (err) {
+      notify(err.message, true);
+      load();
+    }
+  }
+
+  formEl.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const title = inputEl.value.trim();
+    if (!title) {
+      inputEl.focus();
+      return;
+    }
+    addEl.disabled = true;
+    try {
+      const created = await request(API, { method: "POST", body: JSON.stringify({ title: title }) });
+      tasks = tasks.concat(created);
+      inputEl.value = "";
+      setOnline(true);
+      if (filter === "done") filter = "all", syncTabs();
+      render();
+    } catch (err) {
+      notify(err.message, true);
+    } finally {
+      addEl.disabled = false;
+      inputEl.focus();
+    }
+  });
+
+  function syncTabs() {
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.classList.toggle("active", tab.dataset.filter === filter);
+    });
+  }
+
+  $("tabs").addEventListener("click", (event) => {
+    const tab = event.target.closest(".tab");
+    if (!tab) return;
+    filter = tab.dataset.filter;
+    syncTabs();
+    render();
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>

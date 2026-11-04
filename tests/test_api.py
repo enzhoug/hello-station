@@ -25,6 +25,14 @@ def test_task_lifecycle(client):
     assert client.get(f"/api/tasks/{task_id}").status_code == 404
 
 
+def test_home_serves_frontend(client):
+    page = client.get("/")
+    assert page.status_code == 200
+    assert page.headers["content-type"].startswith("text/html")
+    assert "/api/tasks" in page.text
+    assert client.get("/info").json()["service"] == "hello-station"
+
+
 def test_validation_and_missing_tasks(client):
     assert client.post("/api/tasks", json={"title": "  "}).status_code == 422
     assert client.post("/api/tasks", json={"title": "x", "unknown": 1}).status_code == 422
